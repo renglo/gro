@@ -1,0 +1,19 @@
+{
+  "name": "@renglo/gro",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./gro.tsx",
+  "exports": {
+    ".": "./gro.tsx",
+    "./ui/*": "./*",
+    "./ui/navigation/*": "./navigation/*",
+    "./ui/onboarding/*": "./onboarding/*",
+    "./ui/pages/*": "./pages/*"
+  },
+  "peerDependencies": {
+    "lucide-react": "^0.426.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "_id": "d6b3fc4a-4349-4f12-8439-434bc09d9863",
+  "added": "2026-05-18T00:00:00.000000",
+  "blueprint_origin": "",
+  "description": "Persisted property cardinality counts for query constraints",
+  "fields": [
+    {
+      "cardinality": "single",
+      "default": "",
+      "hint": "Node being counted",
+      "label": "Node Type",
+      "layer": 0,
+      "multilingual": false,
+      "name": "node_type",
+      "order": 1,
+      "required": true,
+      "semantic": "hs:node",
+      "source": "",
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "cardinality": "single",
+      "default": {},
+      "hint": "Map of countable properties and their value cardinalities",
+      "label": "Property Counts",
+      "layer": 1,
+      "multilingual": false,
+      "name": "property_counts",
+      "order": 2,
+      "required": true,
+      "semantic": "hs:stats",
+      "source": "",
+      "type": "object",
+      "widget": "json"
+    },
+    {
+      "cardinality": "single",
+      "default": "",
+      "hint": "ISO timestamp when cardinality was updated",
+      "label": "Updated At",
+      "layer": 1,
+      "multilingual": false,
+      "name": "updated_at",
+      "order": 3,
+      "required": true,
+      "semantic": "hs:time",
+      "source": "",
+      "type": "string",
+      "widget": "text"
+    }
+  ],
+  "handle": "irma",
+  "irn": "irn:blueprint:irma:gro_property_cardinality",
+  "label": "Gro Property Cardinality",
+  "license": "CC BY",
+  "name": "gro_property_cardinality",
+  "indexes": {
+    "path": [
+      "node_type"
+    ]
+  },
+  "public": true,
+  "status": "final",
+  "singleton": false,
+  "uri": "https://renglo.com/_blueprint/irma/gro_property_cardinality/1.0.0",
+  "version": "1.0.0"
+}

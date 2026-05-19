@@ -1,0 +1,113 @@
+{
+  "_id": "e8a9e32d-0422-4af3-92f8-4ea2f6fdca6b",
+  "added": "2026-05-18T00:00:00.000000",
+  "blueprint_origin": "",
+  "description": "Persisted edge fanout stats used by cost estimation",
+  "fields": [
+    {
+      "cardinality": "single",
+      "default": "",
+      "hint": "Edge label being sampled",
+      "label": "Sampled Edge Type",
+      "layer": 0,
+      "multilingual": false,
+      "name": "edge_type",
+      "order": 1,
+      "required": true,
+      "semantic": "hs:edge",
+      "source": "",
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "cardinality": "single",
+      "default": "0",
+      "hint": "Total edge records with this label",
+      "label": "Total Edges",
+      "layer": 0,
+      "multilingual": false,
+      "name": "total_edges",
+      "order": 2,
+      "required": true,
+      "semantic": "hs:stats",
+      "source": "",
+      "type": "number",
+      "widget": "text"
+    },
+    {
+      "cardinality": "single",
+      "default": "0",
+      "hint": "Distinct source nodes for this edge label",
+      "label": "Distinct Sources",
+      "layer": 1,
+      "multilingual": false,
+      "name": "distinct_sources",
+      "order": 3,
+      "required": true,
+      "semantic": "hs:stats",
+      "source": "",
+      "type": "number",
+      "widget": "text"
+    },
+    {
+      "cardinality": "single",
+      "default": "0",
+      "hint": "Average fanout by source node",
+      "label": "Average Fanout",
+      "layer": 1,
+      "multilingual": false,
+      "name": "avg_fanout",
+      "order": 4,
+      "required": true,
+      "semantic": "hs:stats",
+      "source": "",
+      "type": "number",
+      "widget": "text"
+    },
+    {
+      "cardinality": "single",
+      "default": "0",
+      "hint": "Maximum fanout among source nodes",
+      "label": "Max Fanout",
+      "layer": 1,
+      "multilingual": false,
+      "name": "max_fanout",
+      "order": 5,
+      "required": true,
+      "semantic": "hs:stats",
+      "source": "",
+      "type": "number",
+      "widget": "text"
+    },
+    {
+      "cardinality": "single",
+      "default": "",
+      "hint": "ISO timestamp when fanout stats were updated",
+      "label": "Updated At",
+      "layer": 1,
+      "multilingual": false,
+      "name": "updated_at",
+      "order": 6,
+      "required": true,
+      "semantic": "hs:time",
+      "source": "",
+      "type": "string",
+      "widget": "text"
+    }
+  ],
+  "handle": "irma",
+  "irn": "irn:blueprint:irma:gro_edge_fanout",
+  "label": "Gro Edge Fanout",
+  "license": "CC BY",
+  "name": "gro_edge_fanout",
+  "indexes": {
+    "path": [
+      "edge_type"
+    ]
+  },
+  "public": true,
+  "status": "final",
+  "singleton": false,
+  "uri": "https://renglo.com/_blueprint/irma/gro_edge_fanout/1.0.0",
+  "version": "1.0.0"
+}

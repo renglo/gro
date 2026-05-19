@@ -1,0 +1,33 @@
+{
+  "_id": "f85f5bd4-81f7-4ebb-a468-35a2a87f3126",
+  "added": "2026-05-18T00:00:00.000000",
+  "blueprint_origin": "",
+  "description": "Onboarding input for Gro installation",
+  "fields": [
+    {
+      "cardinality": "single",
+      "default": "",
+      "hint": "Portfolio where Gro will be installed",
+      "label": "Portfolio",
+      "layer": 0,
+      "multilingual": false,
+      "name": "portfolio",
+      "order": 1,
+      "required": true,
+      "semantic": "hs:portfolio",
+      "source": "portfolio:_id:name",
+      "type": "string",
+      "widget": "select"
+    }
+  ],
+  "handle": "irma",
+  "irn": "irn:blueprint:irma:gro_onboardings",
+  "label": "Gro Onboardings",
+  "license": "CC BY",
+  "name": "gro_onboardings",
+  "public": true,
+  "status": "final",
+  "singleton": false,
+  "uri": "https://renglo.com/_blueprint/irma/gro_onboardings/1.0.0",
+  "version": "1.0.0"
+}

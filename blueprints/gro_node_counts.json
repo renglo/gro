@@ -1,0 +1,68 @@
+{
+  "_id": "7c412667-f35a-4dbc-bb2f-1d9f65dc3f15",
+  "added": "2026-05-18T00:00:00.000000",
+  "blueprint_origin": "",
+  "description": "Persisted approximate node counts for query planning",
+  "fields": [
+    {
+      "cardinality": "single",
+      "default": "",
+      "hint": "Node being counted",
+      "label": "Node Type",
+      "layer": 0,
+      "multilingual": false,
+      "name": "node_type",
+      "order": 1,
+      "required": true,
+      "semantic": "hs:node",
+      "source": "",
+      "type": "string",
+      "widget": "text"
+    },
+    {
+      "cardinality": "single",
+      "default": "0",
+      "hint": "Total amount of node of this type",
+      "label": "Count",
+      "layer": 0,
+      "multilingual": false,
+      "name": "count",
+      "order": 2,
+      "required": true,
+      "semantic": "hs:stats",
+      "source": "",
+      "type": "number",
+      "widget": "text"
+    },
+    {
+      "cardinality": "single",
+      "default": "",
+      "hint": "ISO timestamp when the counts were updated",
+      "label": "Updated At",
+      "layer": 1,
+      "multilingual": false,
+      "name": "updated_at",
+      "order": 3,
+      "required": true,
+      "semantic": "hs:time",
+      "source": "",
+      "type": "string",
+      "widget": "text"
+    }
+  ],
+  "handle": "irma",
+  "irn": "irn:blueprint:irma:gro_node_counts",
+  "label": "Gro Node Counts",
+  "license": "CC BY",
+  "name": "gro_node_counts",
+  "indexes": {
+    "path": [
+      "node_type"
+    ]
+  },
+  "public": true,
+  "status": "final",
+  "singleton": false,
+  "uri": "https://renglo.com/_blueprint/irma/gro_node_counts/1.0.0",
+  "version": "1.0.0"
+}
