@@ -29,28 +29,38 @@ const STAGES: { key: StageKey; label: string; hint: string }[] = [
   { key: "execution_plan_builder", label: "Execution Plan Builder", hint: "Build executable operations list" },
 ];
 
-const SAMPLE_QUERY_PATTERN = {
-  target: "Hotel",
-  constraints: [
-    { node: "City", property: "name", operator: "=", value: "Rio" },
-    { node: "Review", property: "stars", operator: "=", value: 5 },
-  ],
-  relationships: [
-    { from: "Hotel", edge: "LOCATED_IN", to: "City" },
-    { from: "Review", edge: "REVIEWS", to: "Hotel" },
-  ],
+const SAMPLE_REQUEST_BODY = {
+  query_pattern: {
+    target: "Hotel",
+    constraints: [
+      { node: "City", property: "name", operator: "=", value: "Rio" },
+      { node: "Review", property: "stars", operator: "=", value: 5 },
+    ],
+    relationships: [
+      { from: "Hotel", edge: "LOCATED_IN", to: "City" },
+      { from: "Review", edge: "REVIEWS", to: "Hotel" },
+    ],
+  },
 };
 
 export default function GroPipelineProbe({ portfolio, org }: GroPipelineProbeProps) {
-  const [queryPatternRaw, setQueryPatternRaw] = useState(JSON.stringify(SAMPLE_QUERY_PATTERN, null, 2));
+  const [queryPatternRaw, setQueryPatternRaw] = useState(JSON.stringify(SAMPLE_REQUEST_BODY, null, 2));
   const [currentStage, setCurrentStage] = useState(0);
   const [running, setRunning] = useState<StageKey | null>(null);
   const [error, setError] = useState<string>("");
   const [stageOutputs, setStageOutputs] = useState<Record<string, any>>({});
 
-  const parsedQueryPattern = useMemo(() => {
+  const parsedRequestBody = useMemo(() => {
     try {
-      return JSON.parse(queryPatternRaw);
+      const body = JSON.parse(queryPatternRaw);
+      if (!body || typeof body !== "object" || Array.isArray(body)) {
+        return null;
+      }
+      const pattern = (body as Record<string, unknown>).query_pattern;
+      if (!pattern || typeof pattern !== "object" || Array.isArray(pattern)) {
+        return null;
+      }
+      return { body: body as Record<string, unknown>, query_pattern: pattern as Record<string, unknown> };
     } catch {
       return null;
     }
@@ -69,7 +79,7 @@ export default function GroPipelineProbe({ portfolio, org }: GroPipelineProbePro
     const base = {
       portfolio,
       org,
-      query_pattern: parserOut?.query_pattern || parsedQueryPattern,
+      query_pattern: parserOut?.query_pattern || parsedRequestBody?.query_pattern,
     };
 
     switch (key) {
@@ -77,7 +87,7 @@ export default function GroPipelineProbe({ portfolio, org }: GroPipelineProbePro
         return {
           portfolio,
           org,
-          query_pattern: parsedQueryPattern,
+          query_pattern: parsedRequestBody?.query_pattern,
         };
       case "constraint_extractor":
         return base;
@@ -114,8 +124,8 @@ export default function GroPipelineProbe({ portfolio, org }: GroPipelineProbePro
     if (!stage) {
       return;
     }
-    if (!parsedQueryPattern) {
-      setError("Invalid JSON in Query Pattern");
+    if (!parsedRequestBody) {
+      setError('Invalid JSON. Body must be an object with a "query_pattern" field.');
       return;
     }
 
@@ -167,14 +177,15 @@ export default function GroPipelineProbe({ portfolio, org }: GroPipelineProbePro
       </CardHeader>
       <CardContent className="grid gap-6 flex-1 overflow-y-auto pr-2">
         <div className="grid gap-2">
-          <div className="text-sm font-medium">Query Pattern Input</div>
+          <div className="text-sm font-medium">Request body (JSON)</div>
           <Textarea
             className="min-h-[220px] font-mono text-xs"
             value={queryPatternRaw}
             onChange={(e) => setQueryPatternRaw(e.target.value)}
           />
           <div className="text-xs text-muted-foreground">
-            The UI orchestrates the pipeline by running one handler at a time. Use <b>Next</b> to continue.
+            Paste a scheduler request body with a top-level <code>query_pattern</code> (same shape as the query catalog).
+            <code>portfolio</code> and <code>org</code> come from the URL. Use <b>Next</b> to run stages in order.
           </div>
         </div>
 

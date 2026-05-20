@@ -11,8 +11,6 @@ interface GroExecutorProbeProps {
 }
 
 const SAMPLE_PAYLOAD = {
-  portfolio: "p1",
-  org: "o1",
   query_pattern: {
     target: "Hotel",
     constraints: [
@@ -76,7 +74,8 @@ export default function GroExecutorProbe({ portfolio, org }: GroExecutorProbePro
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="text-xs text-muted-foreground">
-          Send either an `execution_plan` directly, or a `query_pattern` to plan-and-execute in one call.
+          Request body with top-level <code>query_pattern</code> (plan-and-execute) or <code>execution_plan</code> (execute only).
+          <code>portfolio</code> and <code>org</code> are taken from the URL.
         </div>
 
         <Textarea

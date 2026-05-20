@@ -8,9 +8,11 @@ The `gro/execute_plan` handler accepts a `query_pattern`, runs the planner, then
 
 ## How to use
 
-1. Copy one payload below.
-2. Replace placeholder values (`<portfolio_id>`, `<org_id>`, etc.).
-3. Send it to `gro/execute_plan`.
+1. Copy one request body below.
+2. Replace placeholder values (for example `<project_id>`, `<delivery_id>`).
+3. `POST` to `/_schd/{portfolio}/{org}/call/gro/execute_plan` (or another `gro/*` handler). The path supplies `portfolio` and `org`; do not put them in the JSON body.
+
+Each example is the full scheduler request body. The only top-level field required for planning is `query_pattern`.
 
 ---
 
@@ -34,8 +36,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_candidates",
     "constraints": [
@@ -64,8 +64,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_candidates",
     "constraints": [
@@ -88,8 +86,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_talent_request",
     "constraints": [
@@ -112,8 +108,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_deliveries",
     "constraints": [
@@ -136,8 +130,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_candidates",
     "constraints": [
@@ -161,8 +153,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_talent",
     "constraints": [
@@ -196,8 +186,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_talent_request",
     "constraints": [
@@ -220,8 +208,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_talent_request",
     "constraints": [
@@ -244,8 +230,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_talent_request",
     "constraints": [
@@ -268,8 +252,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_talent_request",
     "constraints": [
@@ -292,8 +274,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_talent",
     "constraints": [
@@ -316,8 +296,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_talent",
     "constraints": [
@@ -340,8 +318,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_candidates",
     "constraints": [
@@ -364,8 +340,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_deliveries",
     "constraints": [
@@ -388,8 +362,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_talent_request",
     "constraints": [
@@ -413,8 +385,6 @@ General idea:
 
 ```json
 {
-  "portfolio": "<portfolio_id>",
-  "org": "<org_id>",
   "query_pattern": {
     "target": "productora_candidates",
     "constraints": [
@@ -446,6 +416,7 @@ General idea:
 
 ## Notes
 
-- These payloads are planner inputs (`query_pattern`), not prebuilt `execution_plan` payloads.
+- Request bodies must use a top-level `query_pattern` object (not a bare `target` / `constraints` object, and not `portfolio` / `org` in the body).
+- These payloads are planner inputs, not prebuilt `execution_plan` payloads.
 - Some analytics-style queries (e.g. "top N", anti-joins like "requests without deliveries") require post-processing over results.
 - Keep field values aligned with your controlled vocab (`status`, `age_bucket`, `budget_bucket`, `availability_status`) for reliable counts.
