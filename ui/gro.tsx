@@ -2,6 +2,9 @@ import { useEffect } from "react";
 import ToolDataCRUD from "@renglo/data/pages/tool_data_crud";
 import GroPipelineProbe from "./pages/gro_pipeline_probe";
 import GroExecutorProbe from "./pages/gro_executor_probe";
+import GroStatistics from "./pages/gro_statistics";
+import GroNlQuery from "./pages/gro_nl_query";
+import GroCypherCatalogProbe from "./pages/gro_cypher_catalog_probe";
 
 interface Portfolio {
   name: string;
@@ -49,6 +52,9 @@ export default function Gro({
       <div className="flex flex-col sm:gap-2 sm:pl-2">
         {section === "pipeline" && <GroPipelineProbe portfolio={portfolio} org={org} tool={tool} />}
         {section === "executor" && <GroExecutorProbe portfolio={portfolio} org={org} tool={tool} />}
+        {section === "nl_query" && <GroNlQuery portfolio={portfolio} org={org} />}
+        {section === "cypher_catalog" && <GroCypherCatalogProbe portfolio={portfolio} org={org} />}
+        {section === "statistics" && <GroStatistics portfolio={portfolio} org={org} />}
 
         {section === "gro_node_counts" && (
           <ToolDataCRUD readonly={true} portfolio={portfolio} org={org} tool={tool} ring={section} />

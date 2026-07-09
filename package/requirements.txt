@@ -1,1 +1,7 @@
+# Gro handlers requirements
 requests>=2.32.0
+graphforge>=0.4.0
+openai>=1.30.0
+
+# Platform library (install separately in dev):
+# pip install -e ../../dev/renglo-lib

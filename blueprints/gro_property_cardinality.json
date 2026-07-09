@@ -52,7 +52,7 @@
   ],
   "handle": "irma",
   "irn": "irn:blueprint:irma:gro_property_cardinality",
-  "label": "Gro Property Cardinality",
+  "label": "Property Cardinality",
   "license": "CC BY",
   "name": "gro_property_cardinality",
   "indexes": {

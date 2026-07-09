@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from gro.handlers.common import get_query_pattern, normalize_query_pattern
+from gro.handlers.common import get_query_pattern, normalize_query_pattern, same_constraint
 
 
 class ExecutionPlanBuilder:
@@ -24,12 +24,26 @@ class ExecutionPlanBuilder:
         }
 
     def _edge_operation(self, step: Dict[str, Any]) -> Dict[str, Any]:
-        op = "traverse_forward" if step.get("direction") == "forward" else "traverse_reverse"
-        return {
-            "op": op,
+        direction = str(step.get("direction", "forward")).strip() or "forward"
+        edge_where = step.get("edge_where")
+        if direction == "auto":
+            op: Dict[str, Any] = {
+                "op": "traverse_auto",
+                "edge": step.get("edge"),
+                "target_type": step.get("to"),
+            }
+            if isinstance(edge_where, dict) and edge_where:
+                op["edge_where"] = edge_where
+            return op
+        op_name = "traverse_forward" if direction == "forward" else "traverse_reverse"
+        op: Dict[str, Any] = {
+            "op": op_name,
             "edge": step.get("edge"),
             "target_type": step.get("to"),
         }
+        if isinstance(edge_where, dict) and edge_where:
+            op["edge_where"] = edge_where
+        return op
 
     def run(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         query_pattern = normalize_query_pattern(get_query_pattern(payload or {}))
@@ -43,7 +57,7 @@ class ExecutionPlanBuilder:
             operations.append(self._edge_operation(step))
 
         for constraint in query_pattern.get("constraints", []):
-            if constraint == anchor:
+            if same_constraint(constraint, anchor):
                 continue
             operations.append(
                 {

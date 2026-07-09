@@ -14,10 +14,12 @@ setup(
     python_requires=">=3.12",
     install_requires=[
         "requests>=2.32.0",
+        "graphforge>=0.4.0",
+        "openai>=1.30.0",
     ],
     include_package_data=True,
     package_data={
-        "gro": ["blueprints/*.json"],
+        "gro": ["blueprints/*.json", "data/*.json"],
     },
     classifiers=[
         "Development Status :: 4 - Beta",

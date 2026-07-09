@@ -11,6 +11,9 @@ import {
   Database,
   Sigma,
   Link2,
+  BarChart3,
+  Sparkles,
+  Shield,
 } from "lucide-react";
 
 interface ToolMenuProps {
@@ -81,6 +84,30 @@ export default function ToolGroSideNav({ portfolio, org, tool, section, onNaviga
       </NavIcon>
 
       <NavIcon
+        active={section === "nl_query"}
+        label="NL Query"
+        onClick={() => onNavigate(`/${portfolio}/${org}/${tool}/nl_query`)}
+      >
+        <Sparkles className="h-5 w-5" />
+      </NavIcon>
+
+      <NavIcon
+        active={section === "cypher_catalog"}
+        label="Cypher"
+        onClick={() => onNavigate(`/${portfolio}/${org}/${tool}/cypher_catalog`)}
+      >
+        <Shield className="h-5 w-5" />
+      </NavIcon>
+
+      <NavIcon
+        active={section === "statistics"}
+        label="Stats"
+        onClick={() => onNavigate(`/${portfolio}/${org}/${tool}/statistics`)}
+      >
+        <BarChart3 className="h-5 w-5" />
+      </NavIcon>
+
+      <NavIcon
         active={section === "gro_node_counts"}
         label="Nodes"
         onClick={() => onNavigate(`/${portfolio}/${org}/${tool}/gro_node_counts`)}
@@ -90,7 +117,7 @@ export default function ToolGroSideNav({ portfolio, org, tool, section, onNaviga
 
       <NavIcon
         active={section === "gro_property_cardinality"}
-        label="Cardinality"
+        label="Properties"
         onClick={() => onNavigate(`/${portfolio}/${org}/${tool}/gro_property_cardinality`)}
       >
         <Sigma className="h-5 w-5" />
@@ -98,7 +125,7 @@ export default function ToolGroSideNav({ portfolio, org, tool, section, onNaviga
 
       <NavIcon
         active={section === "gro_edge_fanout"}
-        label="Edges"
+        label="FanOut"
         onClick={() => onNavigate(`/${portfolio}/${org}/${tool}/gro_edge_fanout`)}
       >
         <Link2 className="h-5 w-5" />

@@ -1,0 +1,528 @@
+[
+  {
+    "section": "security",
+    "number": 1,
+    "title": "Public DNS entry \u2192 API \u2192 Lambda \u2192 privileged role",
+    "description": "",
+    "query": "MATCH path =\n  (dns:DNSRecord)-[:ROUTES_TO]->(api:API)-[:INVOKES|INTEGRATES_WITH]->(fn:Function)-[:ASSUMES|ASSUMES_ROLE]->(role:Role)\nMATCH (role)-[:HAS_POLICY]->(policy:Policy)-[g:GRANTS]->(target)\nWHERE dns.public = true\n  AND any(action IN g.actions WHERE action ENDS WITH ':*' OR action = '*')\nRETURN dns.name, api.name, fn.name, role.name, policy.name, g.actions, target.name, path;",
+    "id": "security_1",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 2,
+    "title": "Internet-facing APIs without WAF or certificate protection",
+    "description": "",
+    "query": "MATCH (api:API)\nWHERE api.public = true\n  AND NOT (api)-[:PROTECTED_BY]->(:SecurityBoundary {provider_type: 'waf_web_acl'})\n  AND NOT (api)-[:PROTECTED_BY]->(:Certificate)\nRETURN api.name, api.provider_type, api.domain_name, api.region;",
+    "id": "security_2",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 3,
+    "title": "Compute reachable from public DNS and able to write sensitive data",
+    "description": "",
+    "query": "MATCH path =\n  (:DNSRecord {public: true})-[:ROUTES_TO|FORWARDS_TO|INVOKES|INTEGRATES_WITH*1..4]->(workload)\nMATCH (workload)-[:WRITES]->(data)\nWHERE workload:Function OR workload:Compute\n  AND (data:DataStore OR data:ObjectStorage)\n  AND coalesce(data.classification, '') IN ['sensitive', 'pii', 'confidential', 'regulated']\nRETURN workload.name, labels(workload), data.name, data.classification, path;",
+    "id": "security_3",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 4,
+    "title": "IAM principals with wildcard grants",
+    "description": "",
+    "query": "MATCH (principal)-[:HAS_POLICY|MEMBER_OF*0..2]->(p:Policy)-[g:GRANTS]->(target)\nWHERE principal:User OR principal:Role OR principal:Group\n  AND any(action IN g.actions WHERE action = '*' OR action ENDS WITH ':*')\nRETURN principal.name, labels(principal), p.name, g.actions, target.name, labels(target)\nORDER BY principal.name;",
+    "id": "security_4",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 5,
+    "title": "Human users with direct access to secrets or KMS keys",
+    "description": "",
+    "query": "MATCH (u:User)-[:HAS_POLICY|MEMBER_OF|HAS_MEMBER*0..3]->(p:Policy)-[g:GRANTS]->(s:Secret)\nWHERE any(action IN g.actions WHERE\n  action IN ['secretsmanager:GetSecretValue', 'ssm:GetParameter', 'ssm:GetParameters', 'kms:Decrypt']\n  OR action = '*'\n  OR action ENDS WITH ':*')\nRETURN u.name, p.name, g.actions, s.name, s.provider_type;",
+    "id": "security_5",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 6,
+    "title": "Lambda functions with data access but no VPC boundary",
+    "description": "",
+    "query": "MATCH (fn:Function)-[:READS|WRITES]->(data)\nWHERE data:DataStore OR data:ObjectStorage\n  AND NOT (fn)-[:RUNS_IN|DEPLOYED_IN]->(:Network)\nRETURN fn.name, collect(DISTINCT data.name) AS data_accessed;",
+    "id": "security_6",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 7,
+    "title": "Workloads sharing the same overprivileged role",
+    "description": "",
+    "query": "MATCH (w)-[:ASSUMES|ASSUMES_ROLE]->(role:Role)\nWHERE w:Function OR w:Compute\nWITH role, collect(w) AS workloads\nWHERE size(workloads) > 1\nMATCH (role)-[:HAS_POLICY]->(p:Policy)-[g:GRANTS]->(target)\nWHERE any(action IN g.actions WHERE action = '*' OR action ENDS WITH ':*')\nRETURN role.name, [w IN workloads | w.name] AS workloads, p.name, g.actions, target.name;",
+    "id": "security_7",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 8,
+    "title": "Public subnet workloads with database access",
+    "description": "",
+    "query": "MATCH (w)-[:DEPLOYED_IN]->(subnet:Subnet)-[:MEMBER_OF|BELONGS_TO]->(vpc:Network)\nMATCH (w)-[:READS|WRITES]->(db:DataStore)\nWHERE (w:Compute OR w:Function)\n  AND subnet.public = true\nRETURN w.name, labels(w), subnet.name, vpc.name, db.name;",
+    "id": "security_8",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 9,
+    "title": "Databases exposed through permissive security boundaries",
+    "description": "",
+    "query": "MATCH (db:DataStore)-[:MEMBER_OF|PROTECTED_BY]->(sg:SecurityBoundary)\nWHERE sg.provider_type = 'security_group'\n  AND any(rule IN sg.ingress_rules WHERE rule.cidr = '0.0.0.0/0')\nRETURN db.name, db.provider_type, sg.name, sg.ingress_rules;",
+    "id": "security_9",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 10,
+    "title": "S3 buckets with write access from public-facing workloads",
+    "description": "",
+    "query": "MATCH ingress =\n  (:DNSRecord {public: true})-[:ROUTES_TO|FORWARDS_TO|INVOKES|INTEGRATES_WITH*1..4]->(w)\nMATCH (w)-[:WRITES]->(bucket:ObjectStorage)\nWHERE w:Function OR w:Compute\nRETURN w.name, labels(w), bucket.name, ingress;",
+    "id": "security_10",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 11,
+    "title": "Sensitive resources without KMS protection",
+    "description": "",
+    "query": "MATCH (r)\nWHERE (r:DataStore OR r:ObjectStorage)\n  AND coalesce(r.classification, '') IN ['sensitive', 'pii', 'confidential', 'regulated']\n  AND NOT (r)-[:PROTECTED_BY|USES_KEY]->(:Secret {provider_type: 'kms_key'})\nRETURN r.name, labels(r), r.provider_type, r.classification;",
+    "id": "security_11",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 12,
+    "title": "Privilege escalation: user \u2192 group \u2192 policy \u2192 role assumption",
+    "description": "",
+    "query": "MATCH path =\n  (u:User)-[:MEMBER_OF]->(g:Group)-[:HAS_POLICY]->(p:Policy)-[grant:GRANTS]->(role:Role)\nWHERE any(action IN grant.actions WHERE action = 'sts:AssumeRole' OR action = '*')\nRETURN u.name, g.name, p.name, grant.actions, role.name, path;",
+    "id": "security_12",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 13,
+    "title": "Cross-account trust or access",
+    "description": "",
+    "query": "MATCH (src)-[r:GRANTS|TRUSTS|ASSUMES|CONNECTS_TO|CONNECTS]->(dst)\nWHERE src.account_id IS NOT NULL\n  AND dst.account_id IS NOT NULL\n  AND src.account_id <> dst.account_id\nRETURN type(r) AS relationship, src.name, labels(src), src.account_id,\n       dst.name, labels(dst), dst.account_id, r.actions;",
+    "id": "security_13",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 14,
+    "title": "Orphaned public DNS records",
+    "description": "",
+    "query": "MATCH (dns:DNSRecord)\nWHERE dns.public = true\n  AND NOT (dns)-[:ROUTES_TO]->()\nRETURN dns.name, dns.record_type, dns.value, dns.zone;",
+    "id": "security_14",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 15,
+    "title": "Data exfiltration path from public entrypoint to external integration",
+    "description": "",
+    "query": "MATCH path =\n  (:DNSRecord {public: true})-[:ROUTES_TO|INVOKES|INTEGRATES_WITH|TRIGGERS|WRITES|DELIVERS_TO*1..6]->(sink)\nWHERE sink:Queue OR sink:Topic OR sink:Stream OR sink:DeliveryStream OR sink:Workflow\nRETURN sink.name, labels(sink), path;",
+    "id": "security_15",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 16,
+    "title": "Workloads that can read secrets and write externally",
+    "description": "",
+    "query": "MATCH (w)-[:READS|GRANTS]->(secret:Secret)\nMATCH path = (w)-[:WRITES|DELIVERS_TO|STREAMS_TO|ROUTES_TO*1..3]->(out)\nWHERE w:Function OR w:Compute\n  AND (out:Queue OR out:Topic OR out:Stream OR out:ObjectStorage)\nRETURN w.name, secret.name, out.name, labels(out), path;",
+    "id": "security_16",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 17,
+    "title": "Resources with no owner tag",
+    "description": "",
+    "query": "MATCH (r:InfrastructureObject)\nWHERE NOT (:Tag {key: 'owner'})-[:ASSOCIATED_WITH]->(r)\n  AND NOT (:Tag {key: 'team'})-[:ASSOCIATED_WITH]->(r)\nRETURN labels(r), r.name, r.provider_type, r.account_id, r.region;",
+    "id": "security_17",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 18,
+    "title": "Critical resources without audit/log coverage",
+    "description": "",
+    "query": "MATCH (r)\nWHERE r:API OR r:Function OR r:Compute OR r:DataStore OR r:ObjectStorage\n  AND NOT (:AuditTrail)-[:WRITES|OBSERVES|EMITS]->(r)\n  AND NOT (:LogStore)-[:EMITS|OBSERVES]->(r)\nRETURN labels(r), r.name, r.provider_type, r.account_id, r.region;",
+    "id": "security_18",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 19,
+    "title": "Internet gateway path to private data workloads",
+    "description": "",
+    "query": "MATCH path =\n  (igw {provider_type: 'internet_gateway'})-[:ATTACHED_TO|CONNECTS|ROUTES_TO|ROUTES_THROUGH|ASSOCIATED_WITH*1..5]->(db:DataStore)\nRETURN db.name, db.provider_type, path;",
+    "id": "security_19",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "security",
+    "number": 20,
+    "title": "Full attack path: public DNS \u2192 app \u2192 compute \u2192 role \u2192 policy \u2192 data",
+    "description": "",
+    "query": "MATCH path =\n  (dns:DNSRecord {public: true})\n  -[:ROUTES_TO|FORWARDS_TO|INVOKES|INTEGRATES_WITH*1..3]->\n  (w)\n  -[:ASSUMES|ASSUMES_ROLE]->\n  (role:Role)\n  -[:HAS_POLICY]->\n  (policy:Policy)\n  -[:GRANTS]->\n  (data)\nWHERE (w:Function OR w:Compute)\n  AND (data:DataStore OR data:ObjectStorage OR data:Secret)\nRETURN dns.name, w.name, role.name, policy.name, data.name, labels(data), path;",
+    "id": "security_20",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "blast_radius",
+    "number": 1,
+    "title": "Forward blast radius from a compromised workload",
+    "description": "",
+    "query": "MATCH path =\n  (start {id: $resource_id})\n  -[:ASSUMES|HAS_POLICY|GRANTS|READS|WRITES|INVOKES|TRIGGERS|ROUTES_TO|DELIVERS_TO|STREAMS_TO*1..5]->\n  (affected)\nRETURN affected.name,\n       labels(affected) AS affected_type,\n       affected.provider_type,\n       length(path) AS distance,\n       path\nORDER BY distance ASC;",
+    "id": "blast_radius_1",
+    "params": [
+      "resource_id"
+    ],
+    "default_params": {
+      "resource_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 2,
+    "title": "Blast radius summary by resource domain",
+    "description": "",
+    "query": "MATCH path =\n  (start {id: $resource_id})\n  -[:ASSUMES|HAS_POLICY|GRANTS|READS|WRITES|INVOKES|TRIGGERS|ROUTES_TO|DELIVERS_TO|STREAMS_TO*1..5]->\n  (affected)\nWITH DISTINCT affected\nRETURN affected.functional_domain AS domain,\n       count(*) AS affected_count,\n       collect(affected.name)[0..20] AS examples\nORDER BY affected_count DESC;",
+    "id": "blast_radius_2",
+    "params": [
+      "resource_id"
+    ],
+    "default_params": {
+      "resource_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 3,
+    "title": "Sensitive-data blast radius",
+    "description": "",
+    "query": "MATCH path =\n  (start {id: $resource_id})\n  -[:ASSUMES|HAS_POLICY|GRANTS|READS|WRITES|INVOKES|TRIGGERS*1..5]->\n  (data)\nWHERE data:DataStore OR data:ObjectStorage OR data:Secret\n  AND coalesce(data.classification, '') IN ['pii', 'sensitive', 'confidential', 'regulated']\nRETURN data.name,\n       labels(data) AS data_type,\n       data.classification,\n       length(path) AS distance,\n       path\nORDER BY distance ASC;",
+    "id": "blast_radius_3",
+    "params": [
+      "resource_id"
+    ],
+    "default_params": {
+      "resource_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 4,
+    "title": "Write-capability blast radius",
+    "description": "",
+    "query": "MATCH path =\n  (start {id: $resource_id})\n  -[:ASSUMES|HAS_POLICY|GRANTS|WRITES|WRITES_TO|DELIVERS_TO|STREAMS_TO*1..5]->\n  (target)\nWHERE target:DataStore\n   OR target:ObjectStorage\n   OR target:Queue\n   OR target:Topic\n   OR target:Stream\n   OR target:DeliveryStream\nRETURN target.name,\n       labels(target) AS target_type,\n       target.provider_type,\n       path;",
+    "id": "blast_radius_4",
+    "params": [
+      "resource_id"
+    ],
+    "default_params": {
+      "resource_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 5,
+    "title": "Reverse blast radius for a compromised datastore",
+    "description": "",
+    "query": "MATCH path =\n  (dependent)\n  -[:READS|WRITES|READS_FROM|WRITES_TO|USES|STORES_IN|GRANTS*1..4]->\n  (data {id: $datastore_id})\nRETURN dependent.name,\n       labels(dependent) AS dependent_type,\n       dependent.provider_type,\n       length(path) AS distance,\n       path\nORDER BY distance ASC;",
+    "id": "blast_radius_5",
+    "params": [
+      "datastore_id"
+    ],
+    "default_params": {
+      "datastore_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 6,
+    "title": "Role compromise blast radius",
+    "description": "",
+    "query": "MATCH path =\n  (role:Role {id: $role_id})\n  -[:HAS_POLICY|GRANTS|READS|WRITES|USES|INVOKES|TRIGGERS*1..4]->\n  (affected)\nRETURN affected.name,\n       labels(affected) AS affected_type,\n       affected.provider_type,\n       path;",
+    "id": "blast_radius_6",
+    "params": [
+      "role_id"
+    ],
+    "default_params": {
+      "role_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 7,
+    "title": "Workloads affected by one compromised role",
+    "description": "",
+    "query": "MATCH (workload)-[:ASSUMES]->(role:Role {id: $role_id})\nWHERE workload:Function OR workload:Compute\nRETURN role.name,\n       count(workload) AS affected_workload_count,\n       collect(workload.name) AS affected_workloads;",
+    "id": "blast_radius_7",
+    "params": [
+      "role_id"
+    ],
+    "default_params": {
+      "role_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 8,
+    "title": "Policy blast radius",
+    "description": "",
+    "query": "MATCH path =\n  (principal)-[:HAS_POLICY]->(policy:Policy {id: $policy_id})-[:GRANTS]->(target)\nWHERE principal:User OR principal:Group OR principal:Role\nRETURN principal.name,\n       labels(principal) AS principal_type,\n       target.name,\n       labels(target) AS target_type,\n       path;",
+    "id": "blast_radius_8",
+    "params": [
+      "policy_id"
+    ],
+    "default_params": {
+      "policy_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 9,
+    "title": "Wildcard policy blast radius",
+    "description": "",
+    "query": "MATCH (principal)-[:HAS_POLICY]->(policy:Policy)-[g:GRANTS]->(target)\nWHERE any(action IN g.actions WHERE action = '*' OR action ENDS WITH ':*')\nRETURN policy.name,\n       principal.name,\n       labels(principal) AS principal_type,\n       target.name,\n       labels(target) AS target_type,\n       g.actions\nORDER BY policy.name;",
+    "id": "blast_radius_9",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "blast_radius",
+    "number": 10,
+    "title": "KMS key compromise blast radius",
+    "description": "",
+    "query": "MATCH path =\n  (resource)-[:USES_KEY|PROTECTED_BY]->(key:Secret {id: $kms_key_id})\nRETURN key.name,\n       resource.name,\n       labels(resource) AS resource_type,\n       resource.provider_type,\n       resource.classification,\n       path\nORDER BY resource.classification DESC;",
+    "id": "blast_radius_10",
+    "params": [
+      "kms_key_id"
+    ],
+    "default_params": {
+      "kms_key_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 11,
+    "title": "Security group blast radius",
+    "description": "",
+    "query": "MATCH (resource)-[:MEMBER_OF|PROTECTED_BY]->(sg:SecurityBoundary {id: $security_group_id})\nRETURN sg.name,\n       count(resource) AS protected_resource_count,\n       collect({\n         name: resource.name,\n         type: labels(resource),\n         provider_type: resource.provider_type\n       }) AS protected_resources;",
+    "id": "blast_radius_11",
+    "params": [
+      "security_group_id"
+    ],
+    "default_params": {
+      "security_group_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 12,
+    "title": "Public security boundary blast radius",
+    "description": "",
+    "query": "MATCH (resource)-[:MEMBER_OF|PROTECTED_BY]->(sg:SecurityBoundary)\nWHERE any(rule IN sg.ingress_rules WHERE rule.cidr = '0.0.0.0/0' OR rule.cidr = '::/0')\nRETURN sg.name,\n       sg.ingress_rules,\n       count(resource) AS exposed_resource_count,\n       collect(resource.name) AS exposed_resources\nORDER BY exposed_resource_count DESC;",
+    "id": "blast_radius_12",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "blast_radius",
+    "number": 13,
+    "title": "Subnet compromise blast radius",
+    "description": "",
+    "query": "MATCH path =\n  (subnet:Subnet {id: $subnet_id})<-[:DEPLOYED_IN|IN_SUBNET|HOSTS]-(resource)\nOPTIONAL MATCH downstream =\n  (resource)-[:READS|WRITES|ASSUMES|INVOKES|TRIGGERS|ROUTES_TO*1..3]->(affected)\nRETURN subnet.name,\n       resource.name AS directly_affected,\n       labels(resource) AS direct_type,\n       collect(DISTINCT affected.name) AS downstream_affected;",
+    "id": "blast_radius_13",
+    "params": [
+      "subnet_id"
+    ],
+    "default_params": {
+      "subnet_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 14,
+    "title": "VPC/network blast radius",
+    "description": "",
+    "query": "MATCH path =\n  (vpc:Network {id: $network_id})<-[:BELONGS_TO|DEPLOYED_IN|MEMBER_OF|CONTAINS*1..3]-(resource)\nRETURN vpc.name,\n       labels(resource) AS resource_type,\n       resource.provider_type,\n       count(resource) AS count,\n       collect(resource.name)[0..25] AS examples\nORDER BY count DESC;",
+    "id": "blast_radius_14",
+    "params": [
+      "network_id"
+    ],
+    "default_params": {
+      "network_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 15,
+    "title": "API compromise blast radius",
+    "description": "",
+    "query": "MATCH path =\n  (api:API {id: $api_id})\n  -[:INVOKES|INTEGRATES_WITH|ROUTES_TO|FORWARDS_TO|TRIGGERS*1..5]->\n  (affected)\nRETURN api.name,\n       affected.name,\n       labels(affected) AS affected_type,\n       affected.provider_type,\n       length(path) AS distance,\n       path\nORDER BY distance ASC;",
+    "id": "blast_radius_15",
+    "params": [
+      "api_id"
+    ],
+    "default_params": {
+      "api_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 16,
+    "title": "Public entrypoint blast radius",
+    "description": "",
+    "query": "MATCH path =\n  (entry)\n  -[:ROUTES_TO|FORWARDS_TO|INVOKES|INTEGRATES_WITH|TRIGGERS|READS|WRITES|ASSUMES|GRANTS*1..6]->\n  (affected)\nWHERE (entry:DNSRecord OR entry:API)\n  AND entry.public = true\nRETURN entry.name,\n       labels(entry) AS entry_type,\n       affected.name,\n       labels(affected) AS affected_type,\n       length(path) AS distance,\n       path\nORDER BY entry.name, distance;",
+    "id": "blast_radius_16",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "blast_radius",
+    "number": 17,
+    "title": "Shared dependency blast radius",
+    "description": "",
+    "query": "MATCH (dependent)-[:USES|READS|WRITES|INVOKES|DEPLOYED_IN|PROTECTED_BY|USES_KEY]->(shared)\nWITH shared, collect(DISTINCT dependent) AS dependents\nWHERE size(dependents) >= $min_dependents\nRETURN shared.name,\n       labels(shared) AS shared_type,\n       shared.provider_type,\n       size(dependents) AS dependent_count,\n       [d IN dependents | d.name][0..50] AS examples\nORDER BY dependent_count DESC;",
+    "id": "blast_radius_17",
+    "params": [
+      "min_dependents"
+    ],
+    "default_params": {
+      "min_dependents": 3
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 18,
+    "title": "Integration cascade blast radius",
+    "description": "",
+    "query": "MATCH path =\n  (start {id: $resource_id})\n  -[:TRIGGERS|DELIVERS_TO|STREAMS_TO|WRITES_TO|INVOKES*1..6]->\n  (integration)\nWHERE integration:Queue\n   OR integration:Topic\n   OR integration:EventBus\n   OR integration:Stream\n   OR integration:DeliveryStream\n   OR integration:Workflow\nRETURN integration.name,\n       labels(integration) AS integration_type,\n       length(path) AS distance,\n       path\nORDER BY distance ASC;",
+    "id": "blast_radius_18",
+    "params": [
+      "resource_id"
+    ],
+    "default_params": {
+      "resource_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 19,
+    "title": "Alerting/observability blast radius",
+    "description": "",
+    "query": "MATCH path =\n  (observed {id: $resource_id})<-[:OBSERVES|EMITS|WRITES_TO|STREAMS_TO|DELIVERS_TO*1..4]-(obs)\nWHERE obs:LogStore OR obs:AuditTrail OR obs:Alert OR obs:Metric OR obs:Dashboard\nRETURN observed.name,\n       obs.name,\n       labels(obs) AS observability_type,\n       path;",
+    "id": "blast_radius_19",
+    "params": [
+      "resource_id"
+    ],
+    "default_params": {
+      "resource_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 20,
+    "title": "Account-level blast radius by criticality",
+    "description": "",
+    "query": "MATCH (account:Account {id: $account_id})-[:CONTAINS*1..5]->(resource)\nRETURN resource.criticality AS criticality,\n       resource.functional_domain AS domain,\n       count(resource) AS count,\n       collect(resource.name)[0..20] AS examples\nORDER BY criticality DESC, count DESC;",
+    "id": "blast_radius_20",
+    "params": [
+      "account_id"
+    ],
+    "default_params": {
+      "account_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 21,
+    "title": "Cross-account blast radius",
+    "description": "",
+    "query": "MATCH path =\n  (start {account_id: $account_id})\n  -[:TRUSTS|ASSUMES|GRANTS|CONNECTS|CONNECTS_TO|ROUTES_TO|ROUTES_THROUGH*1..5]->\n  (external)\nWHERE external.account_id IS NOT NULL\n  AND external.account_id <> $account_id\nRETURN external.account_id,\n       external.name,\n       labels(external) AS external_type,\n       length(path) AS distance,\n       path\nORDER BY external.account_id, distance;",
+    "id": "blast_radius_21",
+    "params": [
+      "account_id"
+    ],
+    "default_params": {
+      "account_id": ""
+    }
+  },
+  {
+    "section": "blast_radius",
+    "number": 22,
+    "title": "\u201cCrown jewel\u201d shortest paths from public entrypoints",
+    "description": "",
+    "query": "MATCH (entry)\nWHERE (entry:DNSRecord OR entry:API)\n  AND entry.public = true\nMATCH (crown)\nWHERE crown.criticality = 'critical'\n   OR crown.classification IN ['pii', 'regulated', 'confidential']\nMATCH path = shortestPath(\n  (entry)-[:ROUTES_TO|FORWARDS_TO|INVOKES|INTEGRATES_WITH|ASSUMES|GRANTS|READS|WRITES|TRIGGERS*1..8]->(crown)\n)\nRETURN entry.name,\n       crown.name,\n       labels(crown) AS crown_type,\n       length(path) AS distance,\n       path\nORDER BY distance ASC;",
+    "id": "blast_radius_22",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "blast_radius",
+    "number": 23,
+    "title": "Top 20 highest-blast-radius identities",
+    "description": "",
+    "query": "MATCH path =\n  (principal)-[:HAS_POLICY|GRANTS|ASSUMES|READS|WRITES|INVOKES|TRIGGERS*1..5]->(affected)\nWHERE principal:User OR principal:Role OR principal:Group\nWITH principal, count(DISTINCT affected) AS blast_count\nRETURN principal.name,\n       labels(principal) AS principal_type,\n       principal.provider_type,\n       blast_count\nORDER BY blast_count DESC\nLIMIT 20;",
+    "id": "blast_radius_23",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "blast_radius",
+    "number": 24,
+    "title": "Top 20 highest-blast-radius workloads",
+    "description": "",
+    "query": "MATCH path =\n  (workload)-[:ASSUMES|HAS_POLICY|GRANTS|READS|WRITES|INVOKES|TRIGGERS|DELIVERS_TO|STREAMS_TO*1..5]->(affected)\nWHERE workload:Function OR workload:Compute\nWITH workload, count(DISTINCT affected) AS blast_count\nRETURN workload.name,\n       labels(workload) AS workload_type,\n       workload.provider_type,\n       blast_count\nORDER BY blast_count DESC\nLIMIT 20;",
+    "id": "blast_radius_24",
+    "params": [],
+    "default_params": {}
+  },
+  {
+    "section": "blast_radius",
+    "number": 25,
+    "title": "Deletion/removal impact for a resource",
+    "description": "",
+    "query": "MATCH path =\n  (dependent)-[:USES|READS|WRITES|INVOKES|ROUTES_TO|DEPLOYED_IN|PROTECTED_BY|USES_KEY|AUTHENTICATES]->(target {id: $resource_id})\nRETURN target.name,\n       dependent.name,\n       labels(dependent) AS dependent_type,\n       type(last(relationships(path))) AS dependency_type,\n       path;",
+    "id": "blast_radius_25",
+    "params": [
+      "resource_id"
+    ],
+    "default_params": {
+      "resource_id": ""
+    }
+  }
+]

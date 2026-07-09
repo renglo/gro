@@ -44,6 +44,36 @@ export default function ToolGroSheetNav({ portfolio, org, tool, onNavigate }: To
             <GitBranch className="h-5 w-5" />
             Gro Executor
           </button>
+          <button
+            onClick={() => {
+              setOpen(false);
+              onNavigate(`/${portfolio}/${org}/${tool}/nl_query`);
+            }}
+            className="flex items-center gap-4 px-2.5 text-foreground"
+          >
+            <GitBranch className="h-5 w-5" />
+            NL Query
+          </button>
+          <button
+            onClick={() => {
+              setOpen(false);
+              onNavigate(`/${portfolio}/${org}/${tool}/cypher_catalog`);
+            }}
+            className="flex items-center gap-4 px-2.5 text-foreground"
+          >
+            <GitBranch className="h-5 w-5" />
+            Cypher Catalog
+          </button>
+          <button
+            onClick={() => {
+              setOpen(false);
+              onNavigate(`/${portfolio}/${org}/${tool}/statistics`);
+            }}
+            className="flex items-center gap-4 px-2.5 text-foreground"
+          >
+            <GitBranch className="h-5 w-5" />
+            Graph Statistics
+          </button>
         </nav>
       </SheetContent>
     </Sheet>

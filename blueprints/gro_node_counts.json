@@ -52,7 +52,7 @@
   ],
   "handle": "irma",
   "irn": "irn:blueprint:irma:gro_node_counts",
-  "label": "Gro Node Counts",
+  "label": "Node Counts",
   "license": "CC BY",
   "name": "gro_node_counts",
   "indexes": {

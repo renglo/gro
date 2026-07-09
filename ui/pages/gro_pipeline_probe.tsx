@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Circle, Loader2 } from "lucide-react";
+import { CheckCircle2, Circle, Loader2, XCircle } from "lucide-react";
 
 interface GroPipelineProbeProps {
   portfolio: string;
@@ -13,7 +13,6 @@ interface GroPipelineProbeProps {
 type StageKey =
   | "query_parser"
   | "constraint_extractor"
-  | "graph_statistics_registry"
   | "candidate_plan_generator"
   | "cost_estimator"
   | "plan_ranker"
@@ -22,9 +21,8 @@ type StageKey =
 const STAGES: { key: StageKey; label: string; hint: string }[] = [
   { key: "query_parser", label: "Query Parser", hint: "Normalize query pattern" },
   { key: "constraint_extractor", label: "Constraint Extractor", hint: "Extract anchors and filters" },
-  { key: "graph_statistics_registry", label: "Graph Statistics Registry", hint: "Compute and persist stats" },
   { key: "candidate_plan_generator", label: "Candidate Plan Generator", hint: "Generate plan alternatives" },
-  { key: "cost_estimator", label: "Cost Estimator", hint: "Estimate cost per plan" },
+  { key: "cost_estimator", label: "Cost Estimator", hint: "Estimate cost per plan (reads persisted stats)" },
   { key: "plan_ranker", label: "Plan Ranker", hint: "Select best plan" },
   { key: "execution_plan_builder", label: "Execution Plan Builder", hint: "Build executable operations list" },
 ];
@@ -71,7 +69,6 @@ export default function GroPipelineProbe({ portfolio, org }: GroPipelineProbePro
   const buildPayloadForStage = (key: StageKey): Record<string, any> => {
     const parserOut = stageOutputs.query_parser;
     const extractorOut = stageOutputs.constraint_extractor;
-    const statsOut = stageOutputs.graph_statistics_registry;
     const generatorOut = stageOutputs.candidate_plan_generator;
     const estimatorOut = stageOutputs.cost_estimator;
     const rankerOut = stageOutputs.plan_ranker;
@@ -91,8 +88,6 @@ export default function GroPipelineProbe({ portfolio, org }: GroPipelineProbePro
         };
       case "constraint_extractor":
         return base;
-      case "graph_statistics_registry":
-        return base;
       case "candidate_plan_generator":
         return {
           ...base,
@@ -102,7 +97,6 @@ export default function GroPipelineProbe({ portfolio, org }: GroPipelineProbePro
         return {
           ...base,
           candidate_plans: generatorOut?.candidate_plans || [],
-          stats: statsOut?.stats || {},
         };
       case "plan_ranker":
         return {
@@ -145,7 +139,38 @@ export default function GroPipelineProbe({ portfolio, org }: GroPipelineProbePro
 
       const body = await response.json();
       if (!response.ok || !body?.success) {
-        setError(body?.message || body?.output || "Stage execution failed");
+        const output = body?.output;
+        let message = body?.message || "Stage execution failed";
+        let stageOutput: Record<string, unknown> = {
+          success: false,
+          component: stage.key,
+          message,
+        };
+
+        if (Array.isArray(output) && output.length > 0) {
+          const first = output[0];
+          if (typeof first === "object" && first && "message" in first) {
+            message = String(first.message);
+            stageOutput = first as Record<string, unknown>;
+          } else {
+            message = output
+              .map((item) => (typeof item === "string" ? item : JSON.stringify(item)))
+              .join("; ");
+            stageOutput = { success: false, component: stage.key, message };
+          }
+        } else if (typeof output === "object" && output && !Array.isArray(output) && "message" in output) {
+          message = String(output.message);
+          stageOutput = output as Record<string, unknown>;
+        } else if (typeof output === "string") {
+          message = output;
+          stageOutput = { success: false, component: stage.key, message: output };
+        }
+
+        setError(message);
+        setStageOutputs((prev) => ({
+          ...prev,
+          [stage.key]: stageOutput,
+        }));
         return;
       }
 
@@ -191,7 +216,10 @@ export default function GroPipelineProbe({ portfolio, org }: GroPipelineProbePro
 
         <div className="grid gap-3">
           {STAGES.map((stage, idx) => {
-            const done = !!stageOutputs[stage.key];
+            const stageOutput = stageOutputs[stage.key];
+            const hasOutput = !!stageOutput;
+            const failed = hasOutput && stageOutput?.success === false;
+            const succeeded = hasOutput && !failed;
             const isCurrent = idx === currentStage;
             const isRunning = running === stage.key;
             return (
@@ -199,7 +227,13 @@ export default function GroPipelineProbe({ portfolio, org }: GroPipelineProbePro
                 <CardContent className="pt-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-2">
-                      {done ? <CheckCircle2 className="h-4 w-4 mt-1 text-green-600" /> : <Circle className="h-4 w-4 mt-1" />}
+                      {failed ? (
+                        <XCircle className="h-4 w-4 mt-1 text-red-600" />
+                      ) : succeeded ? (
+                        <CheckCircle2 className="h-4 w-4 mt-1 text-green-600" />
+                      ) : (
+                        <Circle className="h-4 w-4 mt-1" />
+                      )}
                       <div>
                         <div className="text-sm font-medium">{idx + 1}. {stage.label}</div>
                         <div className="text-xs text-muted-foreground">{stage.hint}</div>
@@ -215,9 +249,9 @@ export default function GroPipelineProbe({ portfolio, org }: GroPipelineProbePro
                     </Button>
                   </div>
 
-                  {done && (
+                  {hasOutput && (
                     <pre className="mt-3 bg-muted p-3 rounded text-xs overflow-auto max-h-[220px]">
-{JSON.stringify(stageOutputs[stage.key], null, 2)}
+{JSON.stringify(stageOutput, null, 2)}
                     </pre>
                   )}
                 </CardContent>

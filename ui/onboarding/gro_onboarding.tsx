@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import DialogPost from "@/components/console/dialog-post";
@@ -10,13 +10,13 @@ interface BlueprintField {
   options?: Record<string, string>;
   widget?: string;
   required?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface Blueprint {
   label: string;
   fields?: BlueprintField[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface TreeStructure {
@@ -36,45 +36,40 @@ interface OnboardingProps {
   tree: TreeStructure;
 }
 
+const GRO_ONBOARDING_BLUEPRINT: Blueprint = {
+  label: "Gro Onboardings",
+  fields: [
+    {
+      cardinality: "single",
+      default: "",
+      hint: "Portfolio where Gro will be installed",
+      label: "Portfolio",
+      layer: "0",
+      multilingual: false,
+      name: "portfolio",
+      order: "1",
+      required: true,
+      semantic: "hs:portfolio",
+      source: "",
+      type: "string",
+      widget: "select",
+    },
+  ],
+};
+
 export default function GroOnboarding({ tree }: OnboardingProps) {
-  const [blueprint, setBlueprint] = useState<Blueprint>({ label: "" });
-  const [modifiedBlueprint, setModifiedBlueprint] = useState<Blueprint>({ label: "" });
-
-  useEffect(() => {
-    const fetchBlueprint = async () => {
-      try {
-        const blueprintResponse = await fetch(`${import.meta.env.VITE_API_URL}/_blueprint/irma/gro_onboardings/last`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${sessionStorage.accessToken}`,
-          },
-        });
-        const blueprintData = await blueprintResponse.json();
-        setBlueprint(blueprintData);
-        setModifiedBlueprint({ ...blueprintData });
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    void fetchBlueprint();
-  }, []);
-
-  useEffect(() => {
-    if (!tree?.portfolios || !blueprint?.fields) {
-      return;
-    }
+  const modifiedBlueprint = useMemo(() => {
     const portfolioDict: Record<string, string> = {};
-    Object.entries(tree.portfolios).forEach(([portfolioId, portfolio]) => {
+    Object.entries(tree?.portfolios || {}).forEach(([portfolioId, portfolio]) => {
       portfolioDict[portfolioId] = portfolio.name;
     });
 
-    const updatedBlueprint = {
-      ...blueprint,
-      fields: blueprint.fields.map((field: BlueprintField) => {
+    return {
+      ...GRO_ONBOARDING_BLUEPRINT,
+      fields: GRO_ONBOARDING_BLUEPRINT.fields?.map((field: BlueprintField) => {
         if (field.name === "portfolio") {
           return {
             ...field,
-            layer: "0",
             options: portfolioDict,
             widget: "select",
             required: true,
@@ -83,8 +78,7 @@ export default function GroOnboarding({ tree }: OnboardingProps) {
         return field;
       }),
     };
-    setModifiedBlueprint(updatedBlueprint);
-  }, [tree, blueprint]);
+  }, [tree]);
 
   const refreshAction = () => {};
   const portfolioField = modifiedBlueprint.fields?.find((field: BlueprintField) => field.name === "portfolio");

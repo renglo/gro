@@ -25,6 +25,13 @@ class ConstraintExtractor:
             if constraint["node"] != query_pattern["target"]:
                 property_filters.append(dict(constraint))
 
+        forced_anchor = payload.get("force_anchor")
+        if isinstance(forced_anchor, dict):
+            forced_key = make_constraint_key(forced_anchor)
+            selected = [anchor for anchor in anchors if make_constraint_key(anchor) == forced_key]
+            if selected:
+                anchors = selected
+
         return {
             "success": True,
             "component": "constraint_extractor",
