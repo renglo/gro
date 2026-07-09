@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from renglo.common import load_config
 from renglo.data.data_controller import DataController
 
-from gro.handlers.common import make_constraint_key
+from gro.handlers.common import make_constraint_key, make_edge_fanout_key
 
 
 class CostEstimator:
@@ -71,15 +71,25 @@ class CostEstimator:
     def _read_edge_fanout(self, portfolio: str, org: str) -> Dict[str, Dict[str, Any]]:
         edge_fanout: Dict[str, Dict[str, Any]] = {}
         for doc in self._scan_ring_documents(portfolio, org, self.EDGE_FANOUT_RING):
+            from_node = str(doc.get("from_node", "")).strip()
+            to_node = str(doc.get("to_node", "")).strip()
             edge_type = str(doc.get("edge_type", "")).strip()
             if not edge_type:
                 continue
-            edge_fanout[edge_type] = {
+
+            metrics = {
+                "from_node": from_node,
+                "to_node": to_node,
+                "edge_type": edge_type,
                 "total_edges": int(doc.get("total_edges", 0) or 0),
                 "distinct_sources": int(doc.get("distinct_sources", 0) or 0),
                 "avg_fanout": float(doc.get("avg_fanout", 0.0) or 0.0),
                 "max_fanout": int(doc.get("max_fanout", 0) or 0),
             }
+            if from_node and to_node:
+                edge_fanout[make_edge_fanout_key(from_node, to_node, edge_type)] = metrics
+            else:
+                edge_fanout[edge_type] = metrics
         return edge_fanout
 
     def _resolve_stats(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -116,13 +126,28 @@ class CostEstimator:
             return int(node_counts[node])
         return 1
 
+    def _lookup_avg_fanout(self, edge_fanout: Dict[str, Dict[str, Any]], step: Dict[str, Any]) -> float:
+        from_node = str(step.get("from", "")).strip()
+        to_node = str(step.get("to", "")).strip()
+        edge = str(step.get("edge", "")).strip()
+
+        if from_node and to_node and edge:
+            scoped = edge_fanout.get(make_edge_fanout_key(from_node, to_node, edge))
+            if scoped is not None:
+                return max(float(scoped.get("avg_fanout", 1.0)), 1.0)
+
+        if edge:
+            legacy = edge_fanout.get(edge)
+            if legacy is not None:
+                return max(float(legacy.get("avg_fanout", 1.0)), 1.0)
+
+        return 1.0
+
     def _cumulative_fanout(self, edge_steps: List[Dict[str, Any]], stats: Dict[str, Any]) -> float:
         edge_fanout = stats.get("edge_fanout", {})
         cumulative = 1.0
         for step in edge_steps:
-            edge = step["edge"]
-            avg = edge_fanout.get(edge, {}).get("avg_fanout", 1.0)
-            cumulative *= max(float(avg), 1.0)
+            cumulative *= self._lookup_avg_fanout(edge_fanout, step)
         return cumulative
 
     def run(self, payload: Dict[str, Any]) -> Dict[str, Any]:
