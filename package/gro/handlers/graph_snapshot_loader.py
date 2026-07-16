@@ -252,21 +252,29 @@ class GraphSnapshotLoader:
 
     def _extract_edge_properties(self, properties: Dict[str, Any]) -> Dict[str, Any]:
         edge_props: Dict[str, Any] = {}
-        raw_props = properties.get("properties")
-        if isinstance(raw_props, dict):
-            actions = raw_props.get("actions")
+        # Prefer attributes (blueprint-enforced) + extras (passthrough).
+        # Legacy: properties / qualifiers bags.
+        raw_extras = properties.get("extras")
+        if not isinstance(raw_extras, dict):
+            raw_extras = properties.get("properties") if isinstance(properties.get("properties"), dict) else {}
+        if isinstance(raw_extras, dict):
+            actions = raw_extras.get("actions")
             if actions is not None:
                 edge_props["actions"] = actions
-            for key, value in raw_props.items():
+            for key, value in raw_extras.items():
                 if key == "actions":
                     continue
                 if isinstance(value, (str, int, float, bool)) or value is None:
                     edge_props[key] = value
 
-        qualifiers = properties.get("qualifiers")
-        if isinstance(qualifiers, dict):
-            for key, value in qualifiers.items():
+        attributes = properties.get("attributes")
+        if not isinstance(attributes, dict):
+            attributes = properties.get("qualifiers") if isinstance(properties.get("qualifiers"), dict) else {}
+        if isinstance(attributes, dict):
+            for key, value in attributes.items():
                 if isinstance(value, (str, int, float, bool)) or value is None:
+                    edge_props[f"attr_{key.replace('.', '_')}"] = value
+                    # Keep legacy qualifier_* keys briefly for existing Cypher filters.
                     edge_props[f"qualifier_{key.replace('.', '_')}"] = value
         return edge_props
 

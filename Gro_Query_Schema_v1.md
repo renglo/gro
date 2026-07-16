@@ -64,12 +64,12 @@ where can include endpoint-scoped filters and edge-level filters.
     "provider_type": { "op": "=", "value": "vpc" }
   },
   "edge": {
-    "qualifiers.to.universal_domain": { "op": "=", "value": "network" }
+    "extras.to.universal_domain": { "op": "=", "value": "network" }
   }
 }
 Rules
 from.<field> and to.<field> must be present in edge projection schema for this edge_type.
-edge.<field> can target edge fields (qualifiers.*, properties.*, etc.) that exist in edge row.
+edge.<field> can target edge fields (attributes.*, extras.*, etc.) that exist in edge row.
 No document-only fields allowed.
 Unsupported field -> validation error.
 Supported operators (v1)

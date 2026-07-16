@@ -111,7 +111,7 @@ If your pattern is logically from VPC to subnet, but stored edges are subnet -> 
 
 ## 3) JSON v1 - Edge predicates
 
-Filter on edge fields (`qualifiers.*`, `properties.*`, `projection.*`, etc.):
+Filter on edge fields (`attributes.*`, `extras.*`, `projection.*`, etc.):
 
 ```json
 {
@@ -127,7 +127,7 @@ Filter on edge fields (`qualifiers.*`, `properties.*`, `projection.*`, etc.):
       "provider_type": { "op": "=", "value": "subnet" }
     },
     "edge": {
-      "qualifiers.to.universal_domain": { "op": "=", "value": "network" }
+      "extras.to.universal_domain": { "op": "=", "value": "network" }
     }
   },
   "return": {
