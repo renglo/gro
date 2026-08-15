@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from renglo.auth.auth_controller import AuthController
+from renglo.blueprint.extension_blueprints import ensure_extension_blueprints
 from renglo.common import load_config
 
 
@@ -13,6 +14,7 @@ class GroOnboardings:
 
     def __init__(self):
         config = load_config()
+        self.config = config
         self.AUC = AuthController(config=config)
 
     def _create_tool(self, portfolio: str) -> Dict[str, Any]:
@@ -45,6 +47,16 @@ class GroOnboardings:
             return {"success": False, "message": "No portfolio selected", "input": payload}
 
         results: List[Dict[str, Any]] = []
+
+        step_blueprints = ensure_extension_blueprints(self.config, module_file=__file__)
+        results.append(step_blueprints)
+        if not step_blueprints.get("success"):
+            return {
+                "success": False,
+                "message": "Could not install extension blueprints",
+                "input": payload,
+                "output": results,
+            }
 
         step_tool = self._create_tool(portfolio)
         results.append(step_tool)
