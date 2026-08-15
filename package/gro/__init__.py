@@ -14,6 +14,7 @@ from gro.handlers.plan_ranker import PlanRanker
 from gro.handlers.execution_plan_builder import ExecutionPlanBuilder
 from gro.handlers.execute_plan import ExecutePlan
 from gro.handlers.gro_onboardings import GroOnboardings
+from gro.handlers.initialize_extension import InitializeExtension
 from gro.handlers.query_planner_optimizer import QueryPlannerOptimizer
 from gro.handlers.graph_query_v1 import GraphQueryV1
 from gro.handlers.natural_language_query import NaturalLanguageQuery
@@ -30,6 +31,7 @@ __all__ = [
     "ExecutionPlanBuilder",
     "ExecutePlan",
     "GroOnboardings",
+    "InitializeExtension",
     "QueryPlannerOptimizer",
     "GraphQueryV1",
     "NaturalLanguageQuery",
@@ -49,6 +51,7 @@ HANDLERS = {
     "execution_plan_builder": ExecutionPlanBuilder,
     "execute_plan": ExecutePlan,
     "gro_onboardings": GroOnboardings,
+    "initialize_extension": InitializeExtension,
     "query_planner_optimizer": QueryPlannerOptimizer,
     "graph_query_v1": GraphQueryV1,
     "natural_language_query": NaturalLanguageQuery,
