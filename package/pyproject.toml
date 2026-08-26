@@ -3,7 +3,7 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gro"
+name = "renglo-gro"
 version = "0.0.1"
 description = "Gro query planner and optimizer handlers"
 license = { text = "MIT" }
