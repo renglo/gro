@@ -42,6 +42,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Staged at publish time from repo-root blueprints/ (do not commit)
+package/gro/blueprints/
+
 # Distribution / packaging
 .Python
 build/

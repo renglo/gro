@@ -4,8 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gro"
-version = "1.0.0"
+version = "0.0.1"
 description = "Gro query planner and optimizer handlers"
+license = { text = "MIT" }
 authors = [
     {name = "Renglo Team"}
 ]
@@ -25,5 +26,7 @@ dev = [
 [tool.setuptools]
 packages = ["gro", "gro.handlers", "gro.data"]
 
+# blueprints/*.json are staged from repo-root blueprints/ at publish time
+# (see .github/workflows/publish-extension.yml). data/*.json ships from package/gro/data/.
 [tool.setuptools.package-data]
 gro = ["blueprints/*.json", "data/*.json"]

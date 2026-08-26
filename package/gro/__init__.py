@@ -2,7 +2,7 @@
 Gro handlers package.
 """
 
-__version__ = "1.0.0"
+__version__ = "0.0.1"
 
 from gro.handlers.query_parser import QueryParser
 from gro.handlers.constraint_extractor import ConstraintExtractor
