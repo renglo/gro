@@ -47,4 +47,4 @@ ls package/dist/   # renglo_gro-0.0.1-*.whl and .tar.gz
 
 Depend on the **dist name** `renglo-gro` (e.g. `arbitiumtriage` → `renglo-gro>=0.0.1`). Import code stays `from gro...`.
 
-Dependency note: `renglo-gro` requires `graphforge>=0.4.0`. That package must also be reachable from an index CI can read.
+`graphforge` is not a package dependency; Cypher/snapshot paths that need it must install it separately or will no-op / error at runtime.
