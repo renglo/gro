@@ -127,6 +127,8 @@ export default function GroOnboarding({ tree }: OnboardingProps) {
               path={`${import.meta.env.VITE_API_URL}/_schd/run/gro/gro_onboardings`}
               method="POST"
               buttontext="Install"
+              successTitle="Extension activated successfully"
+              successDescription="Extension activated successfully!"
             />
           ) : (
             <div className="text-xs font-medium text-red-500">Create a portfolio first</div>
