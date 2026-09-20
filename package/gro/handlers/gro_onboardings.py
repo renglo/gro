@@ -23,7 +23,15 @@ class GroOnboardings:
             "handle": "gro",
             "portfolio_id": portfolio,
         }
-        response = self.AUC.create_entity("tool", **kwargs)
+        existing = self.AUC.find_installable_by_handle(portfolio, "gro")
+        if existing:
+            return {
+                "success": True,
+                "action": "create_tool",
+                "input": kwargs,
+                "output": existing.get("document") or {},
+            }
+        response = self.AUC.create_entity("extension", **kwargs)
         return {
             "success": bool(response.get("success")),
             "action": "create_tool",
