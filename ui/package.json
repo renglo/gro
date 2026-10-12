@@ -1,6 +1,9 @@
 {
   "name": "@renglo/gro",
   "version": "0.0.5",
+  "renglo": {
+    "platform": "0.1.5"
+  },
   "private": true,
   "type": "module",
   "main": "./gro.tsx",

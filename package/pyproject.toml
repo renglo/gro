@@ -29,3 +29,6 @@ packages = ["gro", "gro.handlers", "gro.data"]
 # (see .github/workflows/publish-extension.yml). data/*.json ships from package/gro/data/.
 [tool.setuptools.package-data]
 gro = ["blueprints/*.json", "data/*.json"]
+
+[tool.renglo]
+platform = "0.1.5"
