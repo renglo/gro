@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "renglo-gro"
-version = "0.0.5"
+version = "0.0.6rc1"
 description = "Gro query planner and optimizer handlers"
 license = { text = "MIT" }
 authors = [
@@ -31,4 +31,4 @@ packages = ["gro", "gro.handlers", "gro.data"]
 gro = ["blueprints/*.json", "data/*.json"]
 
 [tool.renglo]
-platform = "0.1.5"
+platform = "0.1.7"
