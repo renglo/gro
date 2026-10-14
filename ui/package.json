@@ -1,6 +1,6 @@
 {
   "name": "@renglo/gro",
-  "version": "0.0.6",
+  "version": "0.0.7-rc.1",
   "renglo": {
     "platform": "0.1.8"
   },
