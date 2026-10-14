@@ -31,4 +31,4 @@ packages = ["gro", "gro.handlers", "gro.data"]
 gro = ["blueprints/*.json", "data/*.json"]
 
 [tool.renglo]
-platform = "0.1.7"
+platform = "0.1.8"
